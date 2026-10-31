@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# A Little Company? ❤️
 
-## Getting Started
+A small, personal invitation site. She sees a gentle question, taps **Yes**, fills in when and where,
+and you get a beautifully formatted email through [Resend](https://resend.com).
 
-First, run the development server:
+**Stack:** Next.js (App Router) · TypeScript · Tailwind CSS · Framer Motion · Resend · Vercel
+**No database, no stored submissions, no Gmail connection.** The form is validated, sent as an email, and forgotten.
+
+## How it works
+
+1. **Landing**: "Hey, are you feeling a little low?" with a **Yes** button and a playfully evasive **No** button
+   that hops to a random spot on screen (never off-screen, never onto Yes).
+2. **Form**: email, place, date, time and an optional message.
+3. **API** `POST /api/send-email`: validates and sanitises on the server, then sends one email via Resend.
+4. **Confirmation**: shown only after Resend has accepted the email. If sending fails she sees a friendly
+   message and can retry.
+
+The email goes to `NOTIFICATION_EMAIL`, with *Reply-To* set to her address, so you can answer her by simply replying.
+
+## 1. Install
+
+```bash
+npm install
+```
+
+Needs Node.js 20.9 or newer.
+
+## 2. Set up Resend (one time)
+
+1. Create a free account at <https://resend.com>.
+2. **Domains → Add Domain**, add a domain you own, and add the DNS records Resend shows. Wait until it says *Verified*.
+   (Resend only sends from a verified domain. Their `onboarding@resend.dev` test sender can only deliver to the
+   email address that owns the Resend account, which is handy for a first test.)
+3. **API Keys → Create API Key** (permission: *Sending access*). Copy it.
+
+## 3. Configure environment variables
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in `.env.local`:
+
+| Variable             | Meaning                                                                         |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`     | Your Resend API key. Server-only, never exposed to the browser.                 |
+| `RESEND_FROM_EMAIL`  | A sender on your verified domain, e.g. `notifications@yourdomain.com`.          |
+| `NOTIFICATION_EMAIL` | Who receives the notification. Defaults to `misbah.rumman0@gmail.com` in the example. |
+
+Gmail is only the **recipient**. The app never asks for your Gmail password, OAuth or SMTP access.
+
+## 4. Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000>. Production check:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build && npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 5. Deploy to Vercel
 
-## Learn More
+1. Push this folder to a GitHub repository.
+2. On <https://vercel.com/new>, import the repository (framework is detected as Next.js; no settings to change).
+3. Under **Settings → Environment Variables**, add `RESEND_API_KEY`, `RESEND_FROM_EMAIL` and `NOTIFICATION_EMAIL`
+   for *Production* (and *Preview* if you want to test there).
+4. Deploy. Your public URL looks like `https://your-project.vercel.app`; share that link.
 
-To learn more about Next.js, take a look at the following resources:
+Or from the terminal: `npx vercel`, then `npx vercel --prod`, and add the variables with `npx vercel env add`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Safety and privacy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- The API key lives only on the server and is never sent to the browser.
+- Every field is validated on the server, control characters are stripped, and all text is HTML-escaped in the email.
+- Nothing is saved. Submission contents are never logged.
+- **Duplicate protection:** each attempt carries an idempotency key, so a double-click or a retry after a slow
+  connection cannot send two emails. The button is also disabled while sending.
+- **Spam protection:** a hidden honeypot field, a same-site check, a body-size limit, and an in-memory rate limit
+  (8 attempts per visitor per 15 minutes, 60 per hour overall). On serverless hosting the counters are per warm
+  instance and nothing is persisted, so it is best-effort rather than absolute.
+- The page is marked `noindex` so search engines don't list it.
 
-## Deploy on Vercel
+## Project layout
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/app/page.tsx                  entry point
+src/app/api/send-email/route.ts   validation, rate limit, Resend
+src/components/Experience.tsx      screen flow: ask → form → sent
+src/components/Landing.tsx         question + Yes / evasive No
+src/components/EvasiveButton.tsx   the dodging button (Framer Motion)
+src/components/InviteForm.tsx      the invitation form
+src/components/Thanks.tsx          confirmation screen
+src/lib/validate.ts                server-side validation + sanitising
+src/lib/email-template.ts          the HTML email
+src/lib/rate-limit.ts              in-memory rate limiter
+```
