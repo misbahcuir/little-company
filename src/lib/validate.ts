@@ -1,8 +1,14 @@
+import { KISSES } from "./options";
+
 export type Invitation = {
   email: string;
   place: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:MM (24h)
+  dress: string; // optional free text: "" when left blank
+  cuisine: string;
+  kiss: string; // optional: one of KISSES, or ""
+  topics: string; // optional free text
   message: string;
 };
 
@@ -52,10 +58,22 @@ export function parseInvitation(raw: unknown): ValidationResult {
   const time = clean(body.time, 5);
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) errors.time = "Please pick a time.";
 
+  // Optional free-text answers (ideas are only suggestions in the form).
+  const dress = clean(body.dress, 120);
+  const cuisine = clean(body.cuisine, 120);
+  const topics = clean(body.topics, 300);
+
+  // The kiss question is the only dropdown: empty is fine, anything else must be one of the offered choices.
+  let kiss = clean(body.kiss, 60);
+  if (kiss !== "" && !(KISSES as readonly string[]).includes(kiss)) {
+    errors.kiss = "Please choose one of the options.";
+    kiss = "";
+  }
+
   const message = clean(body.message, 1000, true);
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
-  return { ok: true, data: { email, place, date, time, message } };
+  return { ok: true, data: { email, place, date, time, dress, cuisine, kiss, topics, message } };
 }
 
 export function formatDate(date: string): string {

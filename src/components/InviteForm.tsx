@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
+import { CUISINES, DRESS_CODES, KISSES, TOPICS } from "@/lib/options";
 
-type Field = "email" | "place" | "date" | "time" | "message";
+type Field = "email" | "place" | "date" | "time" | "dress" | "cuisine" | "kiss" | "topics" | "message";
 type Status = "idle" | "sending" | "error";
 
 const SUGGESTIONS = ["A quiet café", "Somewhere peaceful", "A nice restaurant", "A long walk", "Anywhere you like"];
@@ -11,6 +12,126 @@ const SUGGESTIONS = ["A quiet café", "Somewhere peaceful", "A nice restaurant",
 const input =
   "w-full rounded-2xl border border-line bg-white/70 px-5 py-3.5 text-base text-ink shadow-sm outline-none transition placeholder:text-muted/70 focus:border-burgundy focus:bg-white focus:ring-4 focus:ring-burgundy/10 aria-[invalid=true]:border-burgundy/70";
 const label = "mb-2 block text-sm font-medium text-burgundy-deep";
+
+function Select({
+  id,
+  label: text,
+  options,
+  error,
+  className = "",
+}: {
+  id: Field;
+  label: string;
+  options: readonly string[];
+  error?: string;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <label htmlFor={id} className={label}>
+        {text}
+      </label>
+      <div className="relative">
+        <select
+          id={id}
+          name={id}
+          defaultValue=""
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+          className={`${input} cursor-pointer appearance-none truncate pr-10 invalid:text-muted/70 [&:has(option[value='']:checked)]:text-muted/70`}
+        >
+          <option value="">Choose…</option>
+          {options.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 20 20"
+          className="pointer-events-none absolute right-5 top-1/2 size-4 -translate-y-1/2 text-burgundy"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m5 8 5 5 5-5" />
+        </svg>
+      </div>
+      {error && (
+        <p id={`${id}-error`} className="mt-2 text-sm text-burgundy">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// A text field with tappable ideas. "pick" fills the field; "list" adds or removes comma-separated ideas.
+function Suggest({
+  id,
+  label: text,
+  value,
+  onChange,
+  placeholder,
+  suggestions,
+  maxLength,
+  mode = "pick",
+}: {
+  id: Field;
+  label: string;
+  value: string;
+  onChange: Dispatch<SetStateAction<string>>;
+  placeholder: string;
+  suggestions: readonly string[];
+  maxLength: number;
+  mode?: "pick" | "list";
+}) {
+  const split = (v: string) => v.split(",").map((i) => i.trim()).filter(Boolean);
+  const isOn = (s: string) => (mode === "list" ? split(value).includes(s) : value === s);
+  // Based on the latest text (not a possibly stale copy), so quick taps never lose an idea.
+  const toggle = (s: string) => {
+    if (mode === "pick") return onChange(s);
+    onChange((prev) => {
+      const items = split(prev);
+      return (items.includes(s) ? items.filter((i) => i !== s) : [...items, s]).join(", ");
+    });
+  };
+
+  return (
+    <div>
+      <label htmlFor={id} className={label}>
+        {text} <span className="font-normal text-muted">(optional)</span>
+      </label>
+      <input
+        id={id}
+        name={id}
+        type="text"
+        value={value}
+        maxLength={maxLength}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete="off"
+        className={input}
+      />
+      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={`Ideas: ${text}`}>
+        {suggestions.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => toggle(s)}
+            aria-pressed={isOn(s)}
+            className="touch-manipulation rounded-full border border-blush bg-cream/80 px-3.5 py-1.5 text-sm text-burgundy transition hover:border-burgundy/40 hover:bg-blush aria-pressed:border-burgundy aria-pressed:bg-burgundy aria-pressed:text-cream"
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function Spinner() {
   return (
@@ -26,6 +147,9 @@ export default function InviteForm({ onSent, onBack }: { onSent: (guestEmail: bo
   const [message, setMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<Field, string>>>({});
   const [place, setPlace] = useState("");
+  const [dress, setDress] = useState("");
+  const [cuisine, setCuisine] = useState("");
+  const [topics, setTopics] = useState("");
   // Today's date in her own time zone, filled in after mount so server and browser markup match.
   const [today, setToday] = useState<string | undefined>(undefined);
   const sending = useRef(false);
@@ -196,6 +320,39 @@ export default function InviteForm({ onSent, onBack }: { onSent: (guestEmail: bo
             {err("time") && <p id="time-error" className="mt-2 text-sm text-burgundy">{err("time")}</p>}
           </div>
         </div>
+
+        <fieldset className="min-w-0 space-y-7 rounded-3xl border border-line bg-blush-soft/50 p-4 sm:p-6">
+          <legend className="px-2 font-serif text-xl italic text-burgundy">A few little details</legend>
+          <Suggest
+            id="dress"
+            label="What should we wear?"
+            value={dress}
+            onChange={setDress}
+            placeholder="What would you like us to wear?"
+            suggestions={DRESS_CODES}
+            maxLength={120}
+          />
+          <Suggest
+            id="cuisine"
+            label="What shall we eat?"
+            value={cuisine}
+            onChange={setCuisine}
+            placeholder="What would you like to eat?"
+            suggestions={CUISINES}
+            maxLength={120}
+          />
+          <Select id="kiss" label="And where would you like a kiss?" options={KISSES} error={err("kiss")} />
+          <Suggest
+            id="topics"
+            label="What shall we talk about?"
+            value={topics}
+            onChange={setTopics}
+            placeholder="What would you like to talk about?"
+            suggestions={TOPICS}
+            maxLength={300}
+            mode="list"
+          />
+        </fieldset>
 
         <div>
           <label htmlFor="message" className={label}>

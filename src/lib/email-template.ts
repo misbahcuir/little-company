@@ -5,6 +5,10 @@ export type EmailDetails = {
   place: string;
   dateLabel: string;
   timeLabel: string;
+  dress: string;
+  cuisine: string;
+  kiss: string;
+  topics: string;
   message: string;
   submittedAt: string;
 };
@@ -66,6 +70,16 @@ export function renderEmail(d: EmailDetails): { html: string; text: string } {
   const messageBlock = d.message
     ? row("In her words", `<span style="font-style:italic;">&ldquo;${e.message}&rdquo;</span>`)
     : "";
+  // Only the choices she actually made are shown.
+  const extras = (dressLabel: string, cuisineLabel: string, kissLabel: string) =>
+    [
+      d.dress && row(dressLabel, escapeHtml(d.dress)),
+      d.cuisine && row(cuisineLabel, escapeHtml(d.cuisine)),
+      d.kiss && row(kissLabel, escapeHtml(d.kiss)),
+      d.topics && row("Topics she'd like to talk about", escapeHtml(d.topics)),
+    ]
+      .filter(Boolean)
+      .join("");
 
   const html = `<!doctype html>
 <html lang="en">
@@ -102,6 +116,7 @@ export function renderEmail(d: EmailDetails): { html: string; text: string } {
               ${row("Where she'd like to go", e.place)}
               ${row("Date", e.date)}
               ${row("Time", e.time)}
+              ${extras("Dress code", "Craving", "Where she'd like a kiss")}
               ${messageBlock}
             </table>
           </td>
@@ -137,6 +152,10 @@ export function renderEmail(d: EmailDetails): { html: string; text: string } {
     `Where she'd like to go: ${d.place}`,
     `Date: ${d.dateLabel}`,
     `Time: ${d.timeLabel}`,
+    d.dress ? `Dress code: ${d.dress}` : "",
+    d.cuisine ? `Craving: ${d.cuisine}` : "",
+    d.kiss ? `Where she'd like a kiss: ${d.kiss}` : "",
+    d.topics ? `Topics she'd like to talk about: ${d.topics}` : "",
     d.message ? `In her words: "${d.message}"` : "",
     "",
     `Sent ${d.submittedAt}`,
@@ -168,6 +187,14 @@ export function renderGuestEmail(d: Omit<EmailDetails, "email" | "submittedAt">)
     time: escapeHtml(d.timeLabel),
     message: escapeHtml(d.message).replace(/\n/g, "<br>"),
   };
+  const extras = [
+    d.dress && row("What we'll wear", escapeHtml(d.dress)),
+    d.cuisine && row("What we'll eat", escapeHtml(d.cuisine)),
+    d.kiss && row("And a little kiss", escapeHtml(d.kiss)),
+    d.topics && row("What we'll talk about", escapeHtml(d.topics)),
+  ]
+    .filter(Boolean)
+    .join("");
   const messageBlock = d.message ? row("What you told me", `<span style="font-style:italic;">&ldquo;${e.message}&rdquo;</span>`) : "";
 
   const html = `<!doctype html>
@@ -207,6 +234,7 @@ export function renderGuestEmail(d: Omit<EmailDetails, "email" | "submittedAt">)
               ${row("Where", e.place)}
               ${row("Date", e.date)}
               ${row("Time", e.time)}
+              ${extras}
               ${messageBlock}
             </table>
           </td>
@@ -240,6 +268,10 @@ export function renderGuestEmail(d: Omit<EmailDetails, "email" | "submittedAt">)
     `Where: ${d.place}`,
     `Date: ${d.dateLabel}`,
     `Time: ${d.timeLabel}`,
+    d.dress ? `What we'll wear: ${d.dress}` : "",
+    d.cuisine ? `What we'll eat: ${d.cuisine}` : "",
+    d.kiss ? `And a little kiss: ${d.kiss}` : "",
+    d.topics ? `What we'll talk about: ${d.topics}` : "",
     d.message ? `What you told me: "${d.message}"` : "",
     "",
     ...GUEST_NOTE.flatMap((l) => [l, ""]),

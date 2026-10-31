@@ -76,6 +76,10 @@ export async function POST(request: Request) {
     place: d.place,
     dateLabel: formatDate(d.date),
     timeLabel: formatTime(d.time),
+    dress: d.dress,
+    cuisine: d.cuisine,
+    kiss: d.kiss,
+    topics: d.topics,
     message: d.message,
     submittedAt: `${submittedAt} (Dhaka time)`,
   });
@@ -108,6 +112,10 @@ export async function POST(request: Request) {
       place: d.place,
       dateLabel: formatDate(d.date),
       timeLabel: formatTime(d.time),
+      dress: d.dress,
+      cuisine: d.cuisine,
+      kiss: d.kiss,
+      topics: d.topics,
       message: d.message,
     });
     const { error } = await resend.emails.send(
