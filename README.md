@@ -8,7 +8,7 @@ and you get a beautifully formatted email through [Resend](https://resend.com).
 
 ## How it works
 
-1. **Landing**: "Hey, are you feeling a little low?" with a **Yes** button and a playfully evasive **No** button
+1. **Landing**: "Oindri, are you feeling a little low?" with a **Yes** button and a playfully evasive **No** button
    that hops to a random spot on screen (never off-screen, never onto Yes).
 2. **Form**: email, place, date, time and an optional message.
 3. **API** `POST /api/send-email`: validates and sanitises on the server, then sends one email via Resend.

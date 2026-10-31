@@ -41,7 +41,7 @@ export default function Landing({ onYes }: { onYes: () => void }) {
         transition={{ delay: 0.25, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         className="font-serif text-5xl font-medium leading-[1.05] tracking-tight text-burgundy-deep sm:text-6xl md:text-7xl"
       >
-        Hey, are you feeling a little low?
+        Oindri, are you feeling a little low?
       </motion.h1>
 
       <motion.p
